@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Calendário Pedriano</title>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* Corpo */
+body {
+    font-family: 'Google Sans', sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    padding: 20px;
+    margin:0;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.year-display {
+    font-size: 2.5em;
+    font-weight: 600;
+}
+
+button {
+    background-color: #1f1f1f;
+    color: #e0e0e0;
+    border: none;
+    padding: 6px 12px;
+    margin: 0 3px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s;
+    font-family: Google Sans
+}
+button:hover {
+    background-color: #333;
+}
+
+/* Calendário */
+.month-container {
+    margin-bottom: 20px;
+    display: inline-block;
+    vertical-align: top;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.month-title {
+    text-align: center;
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 50px); /* 3 colunas */
+    grid-auto-rows: 30px; /* linhas automáticas */
+    gap: 6px;
+    justify-content: start;
+}
+
+/* Cabeçalho dias da semana */
+.weekday-header {
+    background-color: transparent;
+    opacity: 0.5;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 3px;
+    font-size: 0.9em;
+}
+
+/* Caixa de dias */
+.day-box {
+    background-color: transparent;
+    border-radius: 50%;
+    height: 10px;
+    width: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 300;
+    font-size: 0.95em;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+    color: #e0e0e0;
+}
+
+.day-box:hover {
+    transform: scale(1.05);
+    background-color: rgba(255,255,255,0.05);
+}
+
+/* Dia atual */
+.day-box.today {
+    font-weight: 800;
+    color: #fff;
+    background-color: #4285F4;
+    width: 20px;
+    height: 20px;
+    position: relative;
+    left: 15px;
+    top: -4.57px;
+    border-radius: 30%
+}
+
+/* Marcador de evento */
+.day-box.event::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background-color: #03DAC6;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+}
+
+/* Pop-up */
+.popup-overlay {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.popup {
+    background: #1e1e1e;
+    border-radius: 12px;
+    padding: 20px;
+    width: 90%;
+    max-width: 350px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+    color: #e0e0e0;
+}
+
+.popup.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.popup h3 { margin-top:0; font-weight:400; font-size:1.2em; }
+
+.popup textarea {
+    width:100%; height:60px; margin-bottom:10px; padding:5px;
+    font-family:'Google Sans',sans-serif; font-size:0.95em; resize:none;
+    border-radius:6px; border:none; background-color:#2c2c2c; color:#e0e0e0;
+}
+
+.popup select {
+    width:100%; padding:4px; margin-top:2px; font-family: Google Sans;
+    border-radius:6px; border:none; background-color:#2c2c2c; color:#e0e0e0;
+}
+
+.popup-buttons {
+    display:flex; justify-content:space-between; margin-top:10px;
+}
+
+.popup button {
+    width:48%; background-color:#4285F4; color:#fff;
+    border-radius:6px; border:none; padding:6px; font-weight:500;
+}
+
+.popup button:hover { background-color:#3700B3; }
+
+/* Menu lateral */
+#sideMenu {
+    position:fixed; top:0; left:-220px;
+    width:220px; height:100%; background:#1e1e1e;
+    box-shadow:2px 0 12px rgba(0,0,0,0.7); transition:left 0.3s ease;
+    z-index:15; padding-top:60px;
+}
+
+#sideMenu ul { list-style:none; padding:0; margin:0; font-size:1em; }
+#sideMenu li { padding:10px 20px; cursor:pointer; }
+#sideMenu li:hover { background-color:#333; }
+#sideMenu li a { color:#e0e0e0; text-decoration:none; display:block; }
+
+#closeMenuBtn {
+    position:absolute; top:10px; right:10px; background:#4285F4;
+    border:none; color:#fff; font-size:16px; border-radius:6px;
+    padding:4px 8px; cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div style="display:flex; align-items:center;">
+    <button id="menuBtn" style="font-size:20px; margin-right:10px;">☰</button>
+    <span class="year-display" id="yearDisplay"></span>
+  </div>
+  <div>
+    <button onclick="prevYear()">&lt;</button>
+    <button onclick="goToToday()">Hoje</button>
+    <button onclick="nextYear()">&gt;</button>
+  </div>
+</div>
+
+<!-- Menu lateral -->
+<div id="sideMenu">
+  <button id="closeMenuBtn">✕</button>
+  <ul>
+    <li><a href="sobre.html">Sobre</a></li>
+  </ul>
+</div>
+
+<!-- Calendário -->
+<div id="calendarContainer"></div>
+
+<!-- Pop-up -->
+<div class="popup-overlay" id="popupOverlay">
+  <div class="popup" id="popup">
+    <h3 id="popupTitle"></h3>
+    <textarea id="eventText" placeholder="Digite seu evento"></textarea>
+    <div style="display:flex; justify-content: space-between; margin-bottom:10px;">
+      <div>
+        <label for="hourSelect">Hora</label><br>
+        <select id="hourSelect"></select>
+      </div>
+      <div>
+        <label for="minuteSelect">Minuto</label><br>
+        <select id="minuteSelect"></select>
+      </div>
+    </div>
+    <div class="popup-buttons">
+      <button onclick="saveEvent()">Salvar</button>
+      <button onclick="closePopup()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Menu lateral
+const menuBtn = document.getElementById('menuBtn');
+const sideMenu = document.getElementById('sideMenu');
+const closeMenuBtn = document.getElementById('closeMenuBtn');
+
+menuBtn.addEventListener('click', ()=>{ sideMenu.style.left='0px'; });
+closeMenuBtn.addEventListener('click', ()=>{ sideMenu.style.left='-220px'; });
+
+// Configurações salvas
+let configs = JSON.parse(localStorage.getItem('calendarConfigs')) || {
+    primeiroDia: 0,   // 0 = Adedty
+    tema: 'escuro',    // escuro ou claro
+    idioma: 'pt'       // pt ou en
+};
+
+// Calendário base
+const calendarConfig = {
+  start: new Date("2023-12-16T18:00:00-03:00"),
+  months: [
+    { name: "Adrump", days: 4 },
+    { name: "Catuji", days: 2 },
+    { name: "Waryui", days: 4 },
+    { name: "Carumk", days: 3 },
+    { name: "Dafer", days: 4 },
+    { name: "Farertyi", days: 2 },
+  ],
+  weekdays: ["Adedty", "Lathuj", "Sarnissik"]
+};
+calendarConfig.primeiroDiaOffset = configs.primeiroDia;
+
+// Ajusta ordem dos dias da semana
+const baseWeekdays = [...calendarConfig.weekdays];
+calendarConfig.weekdays = baseWeekdays.slice(configs.primeiroDia).concat(baseWeekdays.slice(0, configs.primeiroDia));
+
+let currentDate = new Date();
+let selectedDay = null;
+
+// Calcula calendário 19 dias
+function calcularCalendario19Dias(now){
+  let diffMs = now - calendarConfig.start;
+  const msPerDay = 24*60*60*1000;
+  const totalDays = Math.floor(diffMs/msPerDay);
+
+  const daysPerYear = calendarConfig.months.reduce((sum,m)=>sum+m.days,0);
+  let year = Math.floor(totalDays/daysPerYear)+1;
+  if(year<1) year=1; if(year>999) year=999;
+  let dayOfYear = (totalDays%daysPerYear)+1;
+
+  let monthIndex=0, dayInMonth=dayOfYear;
+  for(let m of calendarConfig.months){
+    if(dayInMonth<=m.days) break;
+    dayInMonth-=m.days;
+    monthIndex++;
+  }
+
+  let weekdayIndex = totalDays % calendarConfig.weekdays.length;
+  return {year, monthIndex, dayInMonth, weekdayIndex, totalDays};
+}
+
+// Gera calendário do ano
+function generateYearCalendar(date){
+  const cal = calcularCalendario19Dias(date);
+  document.getElementById('yearDisplay').textContent = `${cal.year}`;
+
+  const container = document.getElementById('calendarContainer');
+  container.innerHTML='';
+
+  const daysPerYear = calendarConfig.months.reduce((sum,m)=>sum+m.days,0);
+  let dayCounter = (cal.year-1)*daysPerYear;
+
+  const todayCal = calcularCalendario19Dias(new Date());
+  const todayTotalDays = todayCal.totalDays;
+
+  for(let mIndex=0;mIndex<calendarConfig.months.length;mIndex++){
+    const month = calendarConfig.months[mIndex];
+    const monthDiv = document.createElement('div');
+    monthDiv.className='month-container';
+
+    const title = document.createElement('div');
+    title.className='month-title';
+    title.textContent=month.name;
+    monthDiv.appendChild(title);
+
+    const header = document.createElement('div');
+    header.className='calendar-grid';
+    for(let wd of calendarConfig.weekdays){
+      const wdBox = document.createElement('div');
+      wdBox.className='weekday-header';
+      wdBox.textContent=wd[0];
+      header.appendChild(wdBox);
+    }
+    monthDiv.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className='calendar-grid';
+
+    // Ajuste posição do dia 1
+    let startWeekday = (dayCounter % calendarConfig.weekdays.length) - (calendarConfig.primeiroDiaOffset||0);
+    if(startWeekday<0) startWeekday+=calendarConfig.weekdays.length;
+
+    for(let i=0;i<startWeekday;i++){
+      const emptyBox=document.createElement('div');
+      emptyBox.className='day-box';
+      grid.appendChild(emptyBox);
+    }
+
+    for(let d=1;d<=month.days;d++){
+      const dayBox=document.createElement('div');
+      dayBox.className='day-box';
+      dayBox.textContent=d;
+
+      if(dayCounter===todayTotalDays) dayBox.classList.add('today');
+
+      const key=`event_${cal.year}_${mIndex}_${d}`;
+      const saved=JSON.parse(localStorage.getItem(key));
+      if(saved) dayBox.classList.add('event');
+
+      dayBox.addEventListener('click',()=>openPopup(cal.year,mIndex,d));
+
+      grid.appendChild(dayBox);
+      dayCounter++;
+    }
+
+    monthDiv.appendChild(grid);
+    container.appendChild(monthDiv);
+  }
+}
+
+// Pop-up eventos
+function openPopup(year,monthIndex,day){
+  selectedDay={year,monthIndex,day};
+  const overlay=document.getElementById('popupOverlay');
+  const popup=document.getElementById('popup');
+  const title=document.getElementById('popupTitle');
+  const textarea=document.getElementById('eventText');
+  const hourSelect=document.getElementById('hourSelect');
+  const minuteSelect=document.getElementById('minuteSelect');
+
+  title.textContent=`${day} de ${calendarConfig.months[monthIndex].name} de ${year}`;
+  const key=`event_${year}_${monthIndex}_${day}`;
+  const saved=JSON.parse(localStorage.getItem(key))||{};
+  textarea.value=saved.text||'';
+
+  hourSelect.innerHTML='';
+  minuteSelect.innerHTML='';
+  for(let h=0;h<24;h++){
+    const option=document.createElement('option');
+    option.value=h; option.textContent=String(h).padStart(2,'0');
+    if(h===saved.hour) option.selected=true;
+    hourSelect.appendChild(option);
+  }
+  for(let m=0;m<60;m++){
+    const option=document.createElement('option');
+    option.value=m; option.textContent=String(m).padStart(2,'0');
+    if(m===saved.minute) option.selected=true;
+    minuteSelect.appendChild(option);
+  }
+
+  overlay.style.display='flex';
+  setTimeout(()=>popup.classList.add('show'),10);
+}
+
+function closePopup(){
+  document.getElementById('popup').classList.remove('show');
+  setTimeout(()=>document.getElementById('popupOverlay').style.display='none',250);
+  selectedDay=null;
+}
+
+function saveEvent(){
+  if(!selectedDay) return;
+  const text=document.getElementById('eventText').value.trim();
+  const hour=parseInt(document.getElementById('hourSelect').value);
+  const minute=parseInt(document.getElementById('minuteSelect').value);
+  const key=`event_${selectedDay.year}_${selectedDay.monthIndex}_${selectedDay.day}`;
+  if(text) localStorage.setItem(key,JSON.stringify({text,hour,minute}));
+  else localStorage.removeItem(key);
+
+  closePopup();
+  generateYearCalendar(currentDate);
+}
+
+// Navegação anos
+function prevYear(){
+  const cal=calcularCalendario19Dias(currentDate);
+  if(cal.year>1){
+    const daysPerYear=calendarConfig.months.reduce((sum,m)=>sum+m.days,0);
+    currentDate=new Date(currentDate.getTime()-daysPerYear*24*60*60*1000);
+    generateYearCalendar(currentDate);
+  }
+}
+
+function nextYear(){
+  const cal=calcularCalendario19Dias(currentDate);
+  if(cal.year<999){
+    const daysPerYear=calendarConfig.months.reduce((sum,m)=>sum+m.days,0);
+    currentDate=new Date(currentDate.getTime()+daysPerYear*24*60*60*1000);
+    generateYearCalendar(currentDate);
+  }
+}
+
+function goToToday(){ currentDate=new Date(); generateYearCalendar(currentDate); }
+
+// Inicializa
+generateYearCalendar(currentDate);
+</script>
+</body>
+</html>
